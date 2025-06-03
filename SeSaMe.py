@@ -28,10 +28,12 @@ from dataloader import AudioLoader, extract_waveform
 class SeSaMe(nn.Module):
     def __init__(self,H=1,L=8000):
         super().__init__()
+        ## Linear layers
         self.l1 = nn.Linear(4*H, 2*H)
         self.l2 = nn.Linear(8*H, 4*H)
         self.l3 = nn.Linear(4*H, 8*H)
         self.l4 = nn.Linear(2*H, 4*H)
+        ## Mamba blocks
         self.mamba1 = Mamba(d_model= 4*H, ## model dimensionality (i.e dimension of the hidden state)
                            d_state=16,
                            d_conv=4,
@@ -49,9 +51,10 @@ class SeSaMe(nn.Module):
                            )
         self.silu = nn.SiLU()
         self.relu = nn.GELU()
-        
-        #self.l2 = nn.Linear
-    
+
+    '''
+    forward pass of the model (includes skip connections between encoder and decoder)
+    '''    
     def forward(self,x):
         x1 = x.reshape(x.shape[0], x.shape[1], 1)
         #print(x1.shape)
@@ -61,7 +64,7 @@ class SeSaMe(nn.Module):
         #print(x2.shape)
         x22 = x2.reshape(x2.shape[0], x2.shape[1]//4, x2.shape[2]*4)
         x3 = self.relu(self.l2(x22))
-        print(x3.shape)
+        # print(x3.shape)
         x4 = x3+self.relu(self.mamba1(x3))
         #print(x4.shape)
         x5 = self.relu(self.l3(x4))
@@ -75,6 +78,22 @@ class SeSaMe(nn.Module):
         y = y.reshape(y.shape[0], y.shape[1])
         return y
     
+    '''
+    encoder part of the model
+    '''
+    def encode(self,x):
+        x1 = x.reshape(x.shape[0], x.shape[1], 1)
+        #print(x1.shape)
+        x11 = x1.reshape(x1.shape[0], x1.shape[1]//4, x1.shape[2]*4)
+        #print(x11.shape)
+        x2 = self.relu(self.l1(x11))
+        #print(x2.shape)
+        x22 = x2.reshape(x2.shape[0], x2.shape[1]//4, x2.shape[2]*4)
+        x3 = self.relu(self.l2(x22))
+        return x3
+    '''
+    decoder part of the model (w/out skip connections)
+    '''
     def generate(self,x):
         x3 = self.relu(self.mamba1(x))
         x5 = self.relu(self.l3(x3))
@@ -114,7 +133,7 @@ class Pipeline():
                 running_loss += loss.item()      
             self.evaluate(val_loader, e+1)
             print(f"[Epoch {e+1}] Training Loss: {running_loss/len(train_loader):.4f}")
-        torch.save(self.model.state_dict(), "sesame_weights.pt")
+        torch.save(self.model.state_dict(), "sesame_new_weights.pt")
     
     def evaluate(self, loader, epoch, setting="Validation"):
         self.model.eval()
@@ -135,52 +154,21 @@ class Pipeline():
                     batch_num+=1
             print(f"[Epoch {epoch}] {setting} Loss: {running_loss/len(loader):.4f}") 
     
-    def synthesize(self, x,n,sr=16000):
-        self.model.eval()
-        with torch.no_grad():
-            x = x.to(self.device)
-            y = self.model.generate(x)
-            y = y[0,:]
-            y = y.cpu().numpy()
-            #print(y.shape)
-            sf.write(f"{n}.wav",y,sr)
-            #librosa.output.write_wav("test1.wav",y.cpu().numpy(),sr=sr)
+    # def synthesize(self, x,sr=16000):
+    #     self.model.eval()
+    #     with torch.no_grad():
+    #         x = x.to(self.device)
+    #         pred = self.model.generate(x)
+    #         y = pred[0,:]
+    #         y = y.cpu().numpy()
+    #         return pred,y
             
-# model = SeSaMe()
-# model  = model.to("cuda")
-# for i,p in enumerate(loader.train_loader):
-#     y = model(p.to("cuda"))
-#     break
-# class Lightning_SeSaMe(L.LightningModule):
-#     def __init__(self,model):
-#         device = "cuda" if torch.cuda.is_available() else "cpu"
-#         m = model
-#         self.model = m.to(device)
-#         self.criterion = nn.NLLoss()
-        
-#     def training_step(self, x):
-#         x = x.to("cuda")
-#         y = self.model(x)
-#         loss = self.criterion(x,y)
-#         return loss
-    
-#     def configure_optimizers(self):
-#         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
 DATAROOT = "youtube_mix"
 loader  = AudioLoader(DATAROOT)
 model = SeSaMe()      
 
 sesame_pipeline = Pipeline(model,1e-4)
-# sesame_pipeline.train(loader.train_loader, loader.val_loader, 50)
+#sesame_pipeline.train(loader.train_loader, loader.val_loader, 50)
 sesame_pipeline.model.load_state_dict(torch.load("sesame_weights.pt", weights_only=True))
 sesame_pipeline.evaluate(loader.test_loader,"_",setting="Test")
-## synthesizing a piano audio file given Gaussian Noise
-sesame_pipeline.synthesize((0.1**0.5)*torch.randn(1,20000,4), n="creation")
-# for i,p in enumerate(loader.test_loader):
-#     sesame_pipeline.synthesize(p,n=f"test{i}")
-    
-        
-    
-        
-        
