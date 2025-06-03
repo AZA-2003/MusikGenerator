@@ -22,7 +22,7 @@ import soundfile as sf
 ## Mamba library
 from mamba_ssm import Mamba
 ## custom dataloader for the data
-from dataloader import AudioLoader
+from dataloader import AudioLoader, extract_waveform
 
 
 class SeSaMe(nn.Module):
@@ -53,11 +53,6 @@ class SeSaMe(nn.Module):
         #self.l2 = nn.Linear
     
     def forward(self,x):
-        print(x.shape)
-        # x = x.view(x.shape[0], x.shape[1]//8, 8)
-        # x0 = x.view(x.shape[0], x.shape[1]//4, 4)
-        #print(x0.shape)
-        # x1 = self.relu(self.l1(x0)) 
         x1 = x.reshape(x.shape[0], x.shape[1], 1)
         #print(x1.shape)
         x11 = x1.reshape(x1.shape[0], x1.shape[1]//4, x1.shape[2]*4)
@@ -66,7 +61,7 @@ class SeSaMe(nn.Module):
         #print(x2.shape)
         x22 = x2.reshape(x2.shape[0], x2.shape[1]//4, x2.shape[2]*4)
         x3 = self.relu(self.l2(x22))
-        #print(x3.shape)
+        print(x3.shape)
         x4 = x3+self.relu(self.mamba1(x3))
         #print(x4.shape)
         x5 = self.relu(self.l3(x4))
@@ -78,17 +73,19 @@ class SeSaMe(nn.Module):
         #print(x77.shape)
         y = self.relu(self.mamba3(x77+x1))
         y = y.reshape(y.shape[0], y.shape[1])
-        # print(x7.shape)
-        # y = x7.reshape(x7.shape[0], x7.shape[2]//4, x7.shape[1]*4)
-        #print(x1.shape)
-        #x2 = self.relu(self.mamba(x1))
-        #print(x2.shape)
-        #x3 = self.relu(self.l2(x2+x1))
-        #print(x3.shape)
-        #x4 = (x3+self.relu(self.skip_mamba(x))).reshape(x3.shape[0], x3.shape[1]*4, x3.shape[2]//4)
-        #print(x4.shape)
-        # y = self.relu(self.mamba2(x4)).reshape(x4.shape[0], x4.shape[2]//16, x4.shape[1]*16)
-        #print(type(y), type(x))
+        return y
+    
+    def generate(self,x):
+        x3 = self.relu(self.mamba1(x))
+        x5 = self.relu(self.l3(x3))
+        x55 = x5.reshape(x5.shape[0], x5.shape[1]*4, x5.shape[2]//4)
+        x6 = self.relu(self.mamba2(x55))
+        #print(x6.shape)
+        x7 = self.relu(self.l4(x6))
+        x77 = x7.reshape(x7.shape[0], x7.shape[1]*4, x7.shape[2]//4)
+        #print(x77.shape)
+        y = self.relu(self.mamba3(x77))
+        y = y.reshape(y.shape[0], y.shape[1])
         return y
 
 
@@ -117,10 +114,12 @@ class Pipeline():
                 running_loss += loss.item()      
             self.evaluate(val_loader, e+1)
             print(f"[Epoch {e+1}] Training Loss: {running_loss/len(train_loader):.4f}")
+        torch.save(self.model.state_dict(), "sesame_weights.pt")
     
     def evaluate(self, loader, epoch, setting="Validation"):
         self.model.eval()
         running_loss = 0.0
+        batch_num = 0
         with torch.no_grad():
             for x in tqdm(loader, desc=f"Epoch {epoch}", colour="green"):
                 x = x.to(self.device)
@@ -128,17 +127,23 @@ class Pipeline():
                 y = self.model(x)
                 loss = self.criterion(y,x) ## works only with floating values
                 running_loss += loss.item()  
+                if setting == "Test":
+                    y = y[0,:]
+                    y = y.cpu().numpy()
+                    #print(y.shape)
+                    sf.write(f"test{batch_num}.wav",y,16000)
+                    batch_num+=1
             print(f"[Epoch {epoch}] {setting} Loss: {running_loss/len(loader):.4f}") 
     
-    def synthesize(self, x,sr=16000):
+    def synthesize(self, x,n,sr=16000):
         self.model.eval()
         with torch.no_grad():
             x = x.to(self.device)
-            y = self.model(x)
-            y = y[0,0,:]
+            y = self.model.generate(x)
+            y = y[0,:]
             y = y.cpu().numpy()
-            print(y.shape)
-            sf.write("test1.wav",y,sr)
+            #print(y.shape)
+            sf.write(f"{n}.wav",y,sr)
             #librosa.output.write_wav("test1.wav",y.cpu().numpy(),sr=sr)
             
 # model = SeSaMe()
@@ -167,9 +172,14 @@ loader  = AudioLoader(DATAROOT)
 model = SeSaMe()      
 
 sesame_pipeline = Pipeline(model,1e-4)
-sesame_pipeline.train(loader.train_loader, loader.val_loader, 50)
+# sesame_pipeline.train(loader.train_loader, loader.val_loader, 50)
+sesame_pipeline.model.load_state_dict(torch.load("sesame_weights.pt", weights_only=True))
 sesame_pipeline.evaluate(loader.test_loader,"_",setting="Test")
-sesame_pipeline.synthesize(torch.randn(1,160000))
+## synthesizing a piano audio file given Gaussian Noise
+sesame_pipeline.synthesize((0.1**0.5)*torch.randn(1,20000,4), n="creation")
+# for i,p in enumerate(loader.test_loader):
+#     sesame_pipeline.synthesize(p,n=f"test{i}")
+    
         
     
         
