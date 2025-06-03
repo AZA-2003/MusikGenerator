@@ -22,9 +22,9 @@ import gc
 
 
 SAMPLE_RATE = 16000
-AUDIO_DURATION = 10 ## in seconds
+AUDIO_DURATION = 20 ## in seconds
 MINI_DURATION = 5 ## in seconds
-BATCH_SIZE = 1
+BATCH_SIZE = 8
 DATAROOT = "youtube_mix"
 
 def extract_waveform(path):
