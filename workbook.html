@@ -14572,12 +14572,13 @@ a.anchor-link {
 <span class="nb">print</span><span class="p">(</span><span class="n">generated_sequence</span><span class="p">)</span>
 
 <span class="kn">import</span> <span class="nn">midi2audio</span>
-<span class="kn">from</span> <span class="nn">midi2audio</span> <span class="kn">import</span> <span class="n">FluidSynth</span> <span class="c1"># Import library</span>
+<span class="kn">from</span> <span class="nn">midi2audio</span> <span class="kn">import</span> <span class="n">FluidSynth</span>
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Audio</span><span class="p">,</span> <span class="n">display</span>
-<span class="n">fs</span> <span class="o">=</span> <span class="n">FluidSynth</span><span class="p">(</span><span class="s2">&quot;FluidR3Mono_GM.sf3&quot;</span><span class="p">)</span> <span class="c1"># Initialize FluidSynth</span>
+<span class="n">fs</span> <span class="o">=</span> <span class="n">FluidSynth</span><span class="p">(</span><span class="s2">&quot;FluidR3Mono_GM.sf3&quot;</span><span class="p">)</span>
 
 <span class="n">output_score</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">tokens_to_midi</span><span class="p">(</span><span class="n">generated_sequence</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">output_score</span><span class="p">))</span>
+
 <span class="c1"># boost all note velocities</span>
 <span class="k">for</span> <span class="n">track</span> <span class="ow">in</span> <span class="n">output_score</span><span class="o">.</span><span class="n">tracks</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="n">track</span><span class="o">.</span><span class="n">notes</span><span class="p">:</span>
@@ -14586,6 +14587,122 @@ a.anchor-link {
 <span class="n">output_score</span><span class="o">.</span><span class="n">dump_midi</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;rnn.mid&quot;</span><span class="p">)</span>
 <span class="n">fs</span><span class="o">.</span><span class="n">midi_to_audio</span><span class="p">(</span><span class="s2">&quot;rnn.mid&quot;</span><span class="p">,</span> <span class="s2">&quot;rnn.wav&quot;</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">Audio</span><span class="p">(</span><span class="s2">&quot;rnn.wav&quot;</span><span class="p">))</span>
+<span class="n">output_pm</span> <span class="o">=</span> <span class="n">pretty_midi</span><span class="o">.</span><span class="n">PrettyMIDI</span><span class="p">(</span><span class="s2">&quot;rnn.mid&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">inst</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output_pm</span><span class="o">.</span><span class="n">instruments</span><span class="p">):</span>
+    <span class="n">pr</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">get_piano_roll</span><span class="p">(</span><span class="n">fs</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">pr</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;hot&#39;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">train_loss</span> <span class="o">=</span> <span class="mf">1.6510</span>
+<span class="n">val_loss</span> <span class="o">=</span> <span class="mf">1.5989</span>
+
+<span class="n">train_perplexity</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">train_loss</span><span class="p">)</span>  <span class="c1"># ≈ 5.21</span>
+<span class="n">val_perplexity</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">val_loss</span><span class="p">)</span>      <span class="c1"># ≈ 4.95</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model Train Loss: </span><span class="si">{</span><span class="n">train_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model Train Perplexity: </span><span class="si">{</span><span class="n">train_perplexity</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model Validation Loss: </span><span class="si">{</span><span class="n">val_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model Validation Perplexity: </span><span class="si">{</span><span class="n">val_perplexity</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h3 id="Evaluation:-Random-Token-Generator">Evaluation: Random Token Generator<a class="anchor-link" href="#Evaluation:-Random-Token-Generator">&#182;</a></h3>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">generate_random_tokens</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">512</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">max_length</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">generate_random_sequence</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">512</span><span class="p">):</span>
+    <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">vocab_size</span>
+    <span class="n">forbidden</span> <span class="o">=</span> <span class="p">{</span><span class="n">tokenizer</span><span class="p">[</span><span class="s2">&quot;PAD_None&quot;</span><span class="p">],</span> <span class="n">tokenizer</span><span class="p">[</span><span class="s2">&quot;EOS_None&quot;</span><span class="p">]}</span>
+
+    <span class="n">random_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">random_tokens</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">forbidden</span><span class="p">:</span>
+            <span class="n">random_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">tokenizer</span><span class="p">[</span><span class="s2">&quot;BOS_None&quot;</span><span class="p">]]</span> <span class="o">+</span> <span class="n">random_tokens</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">random_tokens</span> <span class="o">=</span> <span class="n">generate_random_sequence</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span>
+<span class="n">rand_score</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">tokens_to_midi</span><span class="p">(</span><span class="n">random_tokens</span><span class="p">)</span>
+
+<span class="c1"># boost all note velocities</span>
+<span class="k">for</span> <span class="n">track</span> <span class="ow">in</span> <span class="n">rand_score</span><span class="o">.</span><span class="n">tracks</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="n">track</span><span class="o">.</span><span class="n">notes</span><span class="p">:</span>
+        <span class="n">note</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">127</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">note</span><span class="o">.</span><span class="n">velocity</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)))</span>
+<span class="n">rand_score</span><span class="o">.</span><span class="n">dump_midi</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;rando.mid&quot;</span><span class="p">)</span>
+
+<span class="n">fs</span><span class="o">.</span><span class="n">midi_to_audio</span><span class="p">(</span><span class="s2">&quot;rando.mid&quot;</span><span class="p">,</span> <span class="s2">&quot;rando.wav&quot;</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">Audio</span><span class="p">(</span><span class="s2">&quot;rando.wav&quot;</span><span class="p">))</span>
+
+<span class="n">rand_pm</span> <span class="o">=</span> <span class="n">pretty_midi</span><span class="o">.</span><span class="n">PrettyMIDI</span><span class="p">(</span><span class="s2">&quot;rando.mid&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">inst</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rand_pm</span><span class="o">.</span><span class="n">instruments</span><span class="p">):</span>
+    <span class="n">pr</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">get_piano_roll</span><span class="p">(</span><span class="n">fs</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">pr</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;hot&#39;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h3 id="Baseline">Baseline<a class="anchor-link" href="#Baseline">&#182;</a></h3>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">baseline_vocab</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">tokenizer</span><span class="p">[</span><span class="s2">&quot;PAD_None&quot;</span><span class="p">],</span> <span class="n">tokenizer</span><span class="p">[</span><span class="s2">&quot;EOS_None&quot;</span><span class="p">]]]</span>
+<span class="n">V</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">baseline_vocab</span><span class="p">)</span>
+<span class="n">uniform_crossentropyloss</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+<span class="n">uniform_perplexity</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">uniform_crossentropyloss</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Baseline Loss: </span><span class="si">{</span><span class="n">uniform_crossentropyloss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Baseline Perplexity: </span><span class="si">{</span><span class="n">uniform_perplexity</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
      </div>
