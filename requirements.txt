@@ -1,0 +1,10 @@
+## up to date versions
+numpy
+glob2
+matplotlib
+ipython
+pytorch-lightning
+##  fixed versions for better running
+tqdm==4.67.1
+einops==0.8.1
+librosa==0.11.0
