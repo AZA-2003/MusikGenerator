@@ -25,6 +25,7 @@ SAMPLE_RATE = 16000
 AUDIO_DURATION = 20 ## in seconds
 MINI_DURATION = 5 ## in seconds
 BATCH_SIZE = 8
+TEST_BATCH_SIZE = 1
 DATAROOT = "youtube_mix"
 
 def extract_waveform(path):
@@ -96,7 +97,7 @@ class AudioLoader():
         
         self.train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=False, drop_last=True)
         self.val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False, drop_last=True)
-        self.test_loader = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=False, drop_last=True)  
+        self.test_loader = DataLoader(test_set, batch_size=TEST_BATCH_SIZE , shuffle=False, drop_last=True)  
 
 ## for testing purposes        
 # loader  = AudioLoader(DATAROOT)

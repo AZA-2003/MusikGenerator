@@ -139,6 +139,7 @@ class Pipeline():
         self.model.eval()
         running_loss = 0.0
         batch_num = 0
+        creations = []
         with torch.no_grad():
             for x in tqdm(loader, desc=f"Epoch {epoch}", colour="green"):
                 x = x.to(self.device)
@@ -149,11 +150,16 @@ class Pipeline():
                 if setting == "Test":
                     y = y[0,:]
                     y = y.cpu().numpy()
+                    creations.append(y)
                     #print(y.shape)
                     sf.write(f"test{batch_num}.wav",y,16000)
                     batch_num+=1
-            print(f"[Epoch {epoch}] {setting} Loss: {running_loss/len(loader):.4f}") 
-    
+            print(f"[Epoch {epoch}] {setting} Loss: {running_loss/len(loader):.4f}")
+        if setting == "Test":
+            creations = np.array(creations).flatten()
+            #print(creations.shape)
+            sf.write(f"test_full.wav",creations,16000)
+
     # def synthesize(self, x,sr=16000):
     #     self.model.eval()
     #     with torch.no_grad():
